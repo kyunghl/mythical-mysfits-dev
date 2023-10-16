@@ -131,3 +131,285 @@ Docker는 Dockerfile에 나열된 지침을 단계별로 실행하여 컨테이�
 - 운영팀은 보통 'python3 MythicalMysfitsService.py'를 실행하여 서버에서 애플리케이션을 실행합니다.
 
 </details>
+<br/>
+
+만일 작성하시다가 막힌다면 아래의 힌트를 참고하세요.
+
+<details close>
+  <summary>HINT: 완료된 Dockerfile 코드</summary>
+
+```dockerfile
+FROM ubuntu:20.04
+RUN apt-get update -y
+RUN apt-get install -y python3-pip python-dev build-essential
+RUN pip3 install --upgrade pip
+#[TODO]: Copy python source files and requirements file into container image
+COPY ./service /MythicalMysfitsService
+WORKDIR /MythicalMysfitsService
+#[TODO]: Install dependencies listed in the requirements.txt file using pip3
+RUN pip3 install -r ./requirements.txt
+#[TODO]: Specify a listening port for the container
+EXPOSE 80
+#[TODO]: Run the mythicalMysfitsService.py as the final step
+ENTRYPOINT ["python3"]
+CMD ["mythicalMysfitsService.py"]
+```
+
+</details>
+<br/>
+
+작성이 완료되었으면 파일 이름을 “DockerFile.draft”에서 “Dockerfile”로 바꾸고 다음 단계로 진행하세요.
+
+```bash
+cd ~/environment/amazon-ecs-mythicalmysfits-workshop/workshop-1/app/monolith-service/
+mv Dockerfile.draft Dockerfile
+```
+
+#### 2. [Docker build](https://docs.docker.com/engine/reference/commandline/build/) 명령을 사용하여 이미지를 빌드합니다
+
+아래 명령은 Dockerfile이 있는 동일한 디렉터리에서 실행해야 합니다. 현재 디렉터리에서 Dockerfile을 찾도록 빌드 명령어에 지시하는 마지막의 마침표를 참고하세요.
+
+```bash
+docker build -t monolith-service .
+```
+
+Docker가 이미지의 모든 레이어를 빌드할 때 많은 출력을 볼 수 있습니다. 도중에 문제가 발생하면 빌드 프로세스가 실패하고 중지됩니다(빌드 프로세스가 실패하지 않는 한 도중에 빨간색 텍스트와 경고가 표시되더라도 괜찮습니다). 빌드가 성공하면 출력 끝에 다음과 같은 성공 메시지가 표시됩니다.
+
+```text
+Step 9/10 : ENTRYPOINT ["python3"]
+ ---> Running in 7abf5edefb36
+Removing intermediate container 7abf5edefb36
+ ---> 653ccee71620
+Step 10/10 : CMD ["mythicalMysfitsService.py"]
+ ---> Running in 291edf3d5a6f
+Removing intermediate container 291edf3d5a6f
+ ---> a8d2aabc6a7b
+Successfully built a8d2aabc6a7b
+Successfully tagged monolith-service:latest
+```
+
+Dockerfile이 성공적으로 빌드되었지만 개발자가 나중에 마이크로 서비스 노력을 위해 Dockefile을 최적화하지 않았습니다. 모놀리스 코드베이스를 마이크로서비스로 분리할 것이므로 소스 코드 (예: mythicalMysfitsService.py)를 자주 편집하고 이 이미지를 몇 번 다시 빌드해야 합니다. 기존 Dockerfile을 살펴보면 빌드 시간을 개선하기 위해 할 수 있는 한 가지 방법은 무엇일까요?
+
+<details close>
+  <summary>HINT</summary>
+
+Docker는 변경되지 않은 레이어를 캐싱하여 효율성을 높이려고 한다는 점을 기억하십시오. 변경이 생기면 Docker는 해당 계층과 그 이후의 모든 계층을 다시 빌드합니다.
+
+파일 어딘가에 임의의 주석을 추가하여 mythicalMysfitsService.py를 편집합니다. Python에 익숙하지 않다면 댓글을 달아주세요. 해시문자 '#'로 시작하는 [주석](https://docs.python.org/3/tutorial/introduction.html)은 기본적으로 무시됩니다.
+
+파일을 변경하고 'docker build' 명령을 사용하여 이미지를 다시 빌드하면 Docker가 캐시에서 레이어를 참조하고, 변경이 처음 도입된 mythicalMysfitsService.py 파일이 복사되는 5단계부터 레이어 재구축을 시작합니다.
+
+```text
+Step 5/10 : COPY ./service /MythicalMysfitsService
+ ---> 9ec17281c6f9
+Step 6/10 : WORKDIR /MythicalMysfitsService
+ ---> Running in 585701ed4a39
+Removing intermediate container 585701ed4a39
+ ---> f24fe4e69d88
+Step 7/10 : RUN pip3 install -r ./requirements.txt
+ ---> Running in 1c878073d631
+Collecting Flask==0.12.2 (from -r ./requirements.txt (line 1))
+```
+
+Dockerfile 명령어들을 재정렬하여 requirements를 설치한 이후 모놀리스 코드를 복사해보세요. 여기서는 requirements보다 python 소스코드가 더 자주 변경될 것이라고 생각하고 있는데, 이 것이 requirements를 별도의 cached layer로 분하여 매번 다시 빌드하지 않도록 하는 이유입니다.
+
+</details>
+<br/>
+
+빌드 시간을 개선할 것으로 생각되는 내용으로 Dockerfile을 편집하고 아래 최종 Dockerfile 힌트와 비교해 보세요.
+
+##### 최종 Dockerfile
+
+<details close>
+  <summary>HINT: 최종 Dockerfile 코드</summary>
+
+```dockerfile
+FROM ubuntu:20.04
+RUN apt-get update -y
+RUN apt-get install -y python3-pip python-dev build-essential
+RUN pip3 install --upgrade pip
+COPY ./service/requirements.txt .
+RUN pip3 install -r ./requirements.txt
+COPY ./service /MythicalMysfitsService
+WORKDIR /MythicalMysfitsService
+EXPOSE 80
+ENTRYPOINT ["python3"]
+CMD ["mythicalMysfitsService.py"]
+```
+
+</details>
+<br/>
+
+최적화의 이점을 확인하려면 먼저 새로 작성한 Dockerfile을 사용하여 모놀리스 이미지를 다시 빌드해야 합니다.
+
+```bash
+docker build -t monolith-service .
+```
+
+그런 다음 mythicalMysfitsService.py을 변경합니다(예: 파일 하단에 다른 임의의 주석 추가).
+
+```python
+ # Run the service on the local server it has been deployed to,
+ # listening on port 8080.
+ if __name__ == "__main__":
+     app.run(host="0.0.0.0", port=80)
+
+ # This is a comment to force a Docker-rebuild
+```
+
+모놀리스 이미지를 다시 빌드하십시오. Docker는 순서 변경 후 첫 번째 rebuild 중에 requirements를 캐시했고 두 번째 rebuild 중에는 캐시를 참조했습니다. 아래와 비슷한 내용이 보일 것입니다.
+
+```text
+  ---> Running in 9eefcf8c59f4
+ Removing intermediate container 9eefcf8c59f4
+ ---> 0992531d8c74
+ Step 9/11 : EXPOSE 80
+ ---> Running in 2c9bbcc4b833
+ Removing intermediate container 2c9bbcc4b833
+ ---> ee4e2b349b05
+ Step 10/11 : ENTRYPOINT ["python3"]
+ ---> Running in f3b011836206
+ Removing intermediate container f3b011836206
+ ---> cfc5c49cc367
+ Step 11/11 : CMD ["mythicalMysfitsService.py"]
+ ---> Running in 867b6e892f50
+ Removing intermediate container 867b6e892f50
+ ---> e40f5d05d445
+ Successfully built e40f5d05d445
+ Successfully tagged monolith-service:latest
+ ```
+
+ 이제 Docker 이미지가 빌드되었습니다. -t 플래그는 결과 컨테이너 이미지의 이름을 지정합니다. 도커 이미지를 나열하면 목록에 “monolith-service” 이미지가 표시됩니다. 다음은 샘플 출력입니다. 목록에 있는 모놀리스 이미지를 참고하세요.
+
+ ```text
+  $ docker images
+ REPOSITORY                                                              TAG                 IMAGE ID            CREATED              SIZE
+ monolith-service                                                        latest              29f339b7d63f        About a minute ago   506MB
+ ubuntu                                                                  20.04              ea4c82dcd15a        4 weeks ago          85.8MB
+ golang      
+ ```
+
+이미지에 “latest” 태그가 붙어 있는 것을 확인할 수 있습니다. 태그를 직접 지정하지 않은 경우의 기본 동작이지만, 이를 자유 형식으로 사용하여 이미지를 식별할 수 있습니다 (예: monolith-service:1.2 또는 monolith-service:Experimental). 이는 이미지를 식별하고 이미지를 branch/version의 코드와 연관시키는 데에도 매우 편리합니다.
+
+#### 3. Docker 컨테이너를 실행하고 컨테이너로 실행되는 adoption 플랫폼을 테스트합니다
+
+[docker run](https://docs.docker.com/engine/reference/run/) 명령을 사용하여 이미지를 실행합니다. -p 플래그는 호스트 수신 포트를 컨테이너 수신 포트에 매핑하는 데 사용됩니다.
+
+```bash
+TABLE_NAME=$(aws dynamodb list-tables | jq -r .TableNames[0])
+docker run -p 8000:80 -e AWS_DEFAULT_REGION=$AWS_REGION -e DDB_TABLE_NAME=$TABLE_NAME monolith-service
+```
+
+애플리케이션 시작 시 출력되는 샘플은 다음과 같습니다.
+
+`Running on http://0.0.0.0:80/ (Press CTRL+C to quit)`
+
+모놀리스 서비스의 기본 기능을 테스트하려면 Cloud9에 번들로 제공되는 [cURL](https://curl.haxx.se/)과 같은 유틸리티를 사용하여 서비스를 쿼리하십시오.
+
+탭 옆의 더하기 기호를 클릭하고 새 터미널을 선택하거나 Cloud9 메뉴에서 창->새터미널을 클릭하여 새 셸 세션을 열고 다음 curl 명령을 실행합니다.
+
+```bash
+curl http://localhost:8000/mysfits
+```
+
+여러 Mythical Mysfits에 대한 데이터가 들어 있는 JSON 배열이 보일 것입니다.
+
+모놀리스 컨테이너를 실행 중인 원래 셸 탭으로 다시 전환하여 모놀리스의 출력을 확인합니다.
+
+모놀리스 컨테이너는 화면에 stdout/stderr 인쇄와 함께 포그라운드에서 실행되므로 요청을 받으면 "200 OK"가 표시됩니다.
+
+다음은 샘플 출력입니다.
+
+```text
+INFO:werkzeug:172.17.0.1 - - [16/Oct/2023 04:11:33] "GET /mysfits HTTP/1.1" 200 -
+```
+
+실행 중인 컨테이너가 있는 탭에서 Ctrl-C를 입력하여 실행 중인 컨테이너를 중지합니다. 참고로 컨테이너는 stdout/stderr이 콘솔에 출력되면서 포그라운드에서 실행되었습니다. 프로덕션 환경에서는 컨테이너를 백그라운드에서 실행하고 로깅을 구성합니다. -d 플래그를 사용하여 백그라운드에서 컨테이너를 실행해 볼 수 있습니다.
+
+```bash
+TABLE_NAME=$(aws dynamodb list-tables | jq -r .TableNames[0])
+docker run -d -p 8000:80 -e AWS_DEFAULT_REGION=$AWS_REGION -e DDB_TABLE_NAME=$TABLE_NAME monolith-service
+```
+
+[docker ps](https://docs.docker.com/engine/reference/commandline/ps/) 명령으로 실행 중인 도커 컨테이너를 나열하여 모놀리스가 실행되고 있는지 확인합니다.
+
+```bash
+docker ps
+```
+
+목록에서 모노리스가 실행 중인 것을 볼 수 있을 것입니다. 이제 이전과 동일한 curl 명령을 반복하여 동일한 Mysfits 목록이 표시되도록 하십시오. [docker logs](https://docs.docker.com/engine/reference/commandline/ps/) (컨테이너 이름 또는 id 프래그먼트를 인수로 사용) 를 실행하여 로그를 다시 확인할 수 있습니다.
+
+```bash
+docker logs <CONTAINER_ID>
+```
+
+위 명령의 샘플 출력은 다음과 같습니다.
+
+```text
+ $ docker run -d -p 8000:80 -e AWS_DEFAULT_REGION=<b><i>$AWS_REGION</i></b> -e DDB_TABLE_NAME=<b><i>TABLE_NAME</i></b> monolith-service
+ 51aba5103ab9df25c08c18e9cecf540592dcc67d3393ad192ebeda6e872f8e7a
+ $ docker ps
+ CONTAINER ID        IMAGE                           COMMAND                  CREATED             STATUS              PORTS                  NAMES
+ 51aba5103ab9        monolith-service:latest         "python mythicalMysf…"   24 seconds ago      Up 23 seconds       0.0.0.0:8000->80/tcp   awesome_varahamihira
+ $ curl localhost:8000/mysfits
+ {"mysfits": [...]}
+ $ docker logs 51a
+ * Running on http://0.0.0.0:80/ (Press CTRL+C to quit)
+ 172.17.0.1 - - [16/Nov/2018 22:56:03] "GET /mysfits HTTP/1.1" 200 -
+ INFO:werkzeug:172.17.0.1 - - [16/Nov/2018 22:56:03] "GET /mysfits HTTP/1.1" 200 -
+```
+
+위의 샘플 출력에서 컨테이너에는 “awesome_varahamihira”라는 이름이 지정되었습니다. 이름은 임의로 지정됩니다. 실행 이름을 지정하려는 경우 docker run 명령에 이름 옵션을 전달할 수도 있습니다. 이에 대한 자세한 내용은 [Docker run reference](https://docs.docker.com/engine/reference/run/)에서 확인할 수 있습니다. 컨테이너가 제대로 작동하는 것을 확인했으니 이제 `docker kill` 을 사용하여 컨테이너를 종료하세요.
+
+#### 4. ECR로 이미지 푸시
+
+이제 작동하는 Docker 이미지를 얻었으니 이미지에 태그를 지정하고 [Elastic Container Registry (ECR)](https://aws.amazon.com/ecr/)로 푸시하세요. ECR은 Docker 컨테이너 이미지를 쉽게 저장, 관리 및 배포할 수 있는 완전 관리형 Docker 컨테이너 레지스트리입니다. 다음 실습에서는 ECS를 사용하여 ECR에서 이미지를 가져와보겠습니다.
+
+AWS 관리 콘솔에서 ECS 대시보드의 [리포지토리](https://console.aws.amazon.com/ecs/home#/repositories)로 이동합니다. 모놀리스 서비스와 이와 유사한 서비스의 리포지토리가 표시되어야 합니다. 클라우드포메이션에서 만든 파일들은 Stack_NAME-Mono-xxx 및 Stack_Name-like-xxx와 같이 이름을 지었습니다. 여기서 STACK_NAME은 클라우드포메이션 스택의 이름입니다 (스택 이름은 잘릴 수 있음).
+
+![ECR](https://static.us-east-1.prod.workshops.aws/5aca20e9-0109-4e7f-a06d-55c2074a2de7/static/images/01-ecr-repo.png?Key-Pair-Id=K36Q2WVO3JP7QD&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9zdGF0aWMudXMtZWFzdC0xLnByb2Qud29ya3Nob3BzLmF3cy81YWNhMjBlOS0wMTA5LTRlN2YtYTA2ZC01NWMyMDc0YTJkZTcvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTY5ODAyMTIzN319fV19&Signature=FvdcsvTaXJXquk4SgRSZqsb5y1OrsXQBcAelPROiC7HAXATl3n1NHF-ecxf-i0gj9GzgczE3OI7v6bPaTStMWV4ydYCRCk1pj8XA2p9GPCNHPEqEjr0c4M49pyoLGqsKG0sHTjxbT3UtxjgSAf9jHF4XVe%7E7RMJ5FmQIqJm1e9K5h6R6W1Zei7ZH9IWMf3B-k%7ESFPdU44ntykruCh1dF5awe68-pidB6ExmK8PLiw%7EK3xfRqrAfBAeebx8NcfcGGczySH0G2QFLGDBQMZeKeiyOMoPA9S1txth5Xz9eAh5MCTq9tAChKDeryDpG0U5U8zomzKm2IA7Gc%7EXgJfakTDw__)
+
+Mono 리포지토리의 URI 옆에 있는 복사 아이콘을 클릭합니다. 이 값은 다음 실습에서 다시 사용합니다.
+
+컨테이너 이미지에 태그를 지정하고 모노리스 저장소로 푸시합니다.
+
+```bash
+MONO_ECR_REPOSITORY_URI=$(aws ecr describe-repositories | jq -r .repositories[].repositoryUri | grep mono)
+docker tag monolith-service:latest $MONO_ECR_REPOSITORY_URI:latest
+docker push $MONO_ECR_REPOSITORY_URI:latest
+```
+
+push 명령을 실행하면 Docker는 레이어를 ECR로 푸시합니다.
+
+다음은 이러한 명령의 샘플 출력입니다.
+
+```text
+ $ docker tag monolith-service:latest 873896820536.dkr.ecr.us-east-2.amazonaws.com/mysfit-mono-oa55rnsdnaud:latest
+ $ docker push 873896820536.dkr.ecr.us-east-2.amazonaws.com/mysfit-mono-oa55rnsdnaud:latest
+ The push refers to a repository [873896820536.dkr.ecr.us-east-2.amazonaws.com/mysfit-mono-oa55rnsdnaud:latest]
+ 0f03d692d842: Pushed
+ ddca409d6822: Pushed
+ d779004749f3: Pushed
+ 4008f6d92478: Pushed
+ e0c4f058a955: Pushed
+ 7e33b38be0e9: Pushed
+ b9c7536f9dd8: Pushed
+ 43a02097083b: Pushed
+ 59e73cf39f38: Pushed
+ 31df331e1f23: Pushed
+ 630730f8c75d: Pushed
+ 827cd1db9e95: Pushed
+ e6e107f1da2f: Pushed
+ c41b9462ea4b: Pushed
+ latest: digest: sha256:a27cb7c6ad7a62fccc3d56dfe037581d314bd8bd0d73a9a8106d979ac54b76ca size: 3252
+```
+
+> 참고: 일반적으로 ECR 리포지토리에 로그인해야 합니다. 하지만 [Amazon ECR Credential Helper](https://github.com/awslabs/amazon-ecr-credential-helper)가 Cloud9 환경에 설치 및 구성되었으므로 ECR로 도커를 인증할 필요가 없었습니다.이 작업은 이전에 설치 스크립트를 실행했을 때 수행되었습니다. 이 [문서](https://aws.amazon.com/blogs/compute/authenticating-amazon-ecr-repositories-for-docker-cli-with-credential-helper/)에서 자격 증명 도우미에 대한 자세한 내용을 읽을 수 있습니다.
+
+콘솔에서 ECR 리포지토리 페이지를 새로 고치면 새 이미지가 업로드되고 최신으로 태그가 지정된 것을 볼 수 있습니다.
+
+![mono-image](https://static.us-east-1.prod.workshops.aws/5aca20e9-0109-4e7f-a06d-55c2074a2de7/static/images/01-ecr-push-complete.png?Key-Pair-Id=K36Q2WVO3JP7QD&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9zdGF0aWMudXMtZWFzdC0xLnByb2Qud29ya3Nob3BzLmF3cy81YWNhMjBlOS0wMTA5LTRlN2YtYTA2ZC01NWMyMDc0YTJkZTcvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTY5ODAyMTIzN319fV19&Signature=FvdcsvTaXJXquk4SgRSZqsb5y1OrsXQBcAelPROiC7HAXATl3n1NHF-ecxf-i0gj9GzgczE3OI7v6bPaTStMWV4ydYCRCk1pj8XA2p9GPCNHPEqEjr0c4M49pyoLGqsKG0sHTjxbT3UtxjgSAf9jHF4XVe%7E7RMJ5FmQIqJm1e9K5h6R6W1Zei7ZH9IWMf3B-k%7ESFPdU44ntykruCh1dF5awe68-pidB6ExmK8PLiw%7EK3xfRqrAfBAeebx8NcfcGGczySH0G2QFLGDBQMZeKeiyOMoPA9S1txth5Xz9eAh5MCTq9tAChKDeryDpG0U5U8zomzKm2IA7Gc%7EXgJfakTDw__)
+
+##### Checkpoint
+
+이제 ECR 리포지토리에 모놀리스 코드베이스를 위한 작업 컨테이너가 저장되어 있어야 합니다. 이제 [Amazon ECS](https://catalog.us-east-1.prod.workshops.aws/event/dashboard/en-US/workshop/ecs) 또는 [Amazon EKS](https://catalog.us-east-1.prod.workshops.aws/event/dashboard/en-US/workshop/eks)를 사용하여 모놀리스를 배포할 준비가 되었습니다.
