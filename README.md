@@ -105,32 +105,29 @@ Docker는 Dockerfile에 나열된 지침을 단계별로 실행하여 컨테이�
 예를 들어, 초안 파일에서 첫 번째 줄 (FROM ubuntu:20.04) 은 기본 이미지를 시작점으로 지정합니다. 다음 명령어인 RUN apt-get -y update 는 Docker가 Ubuntu 리포지토리에서 패키지 목록을 업데이트하는 새 레이어를 생성합니다. 이런 과정은 보통 ENTRYPOINT 또는 실행 파일을 실행하는 마지막 명령에 도달할 때까지 계속됩니다.
 
 <details close>
-
   <summary>HINT: DockeFile.draft 작성을 위한 유용한 링크</summary>
-  
-Here are links to external documentation to give you some ideas:
 
-`#[TODO]: Copy the "service" directory into container image`
+`#[TODO]: “service” 디렉토리를 컨테이너 이미지에 복사`
 
-- Consider the [COPY](https://docs.docker.com/engine/reference/builder/#copy) command
-- You're copying both the python source files and requirements.txt from the "monolith-service/service" directory on your EC2 instance into a working directory within the container, which can be something like "/MythicalMysfitsService"
-- Consider the [WORKDIR](https://docs.docker.com/engine/reference/builder/#workdir) command as a way to navigate within the context of the container's directory structure
+- [COPY](https://docs.docker.com/engine/reference/builder/#copy) 명령
+- EC2 인스턴스의 "monolith-service/service" 디렉터리에 있는 파이썬 소스 파일과 requirements.txt 모두를 컨테이너 내의 작업 디렉터리 (예: “/MythicalMysFitsService”)로 복사합니다.
+- [WORKDIR](https://docs.docker.com/engine/reference/builder/#workdir) - 컨테이너의 디렉토리 구조 내에서 탐색하는 방법
 
-`#[TODO]: Install dependencies listed in the requirements.txt file using pip3`
+`#[TODO]: pip3을 사용하여 requirements.txt 파일에 나열된 종속 항목을 설치합니다.`
 
-- Consider the [RUN](https://docs.docker.com/engine/reference/builder/#run) command
-- More on [pip and requirements files](https://pip.pypa.io/en/stable/user_guide/#requirements-files)
-- Btw, the team upgraded to python3 recently, so you'll want to use 'pip3' not 'pip'
+- [RUN](https://docs.docker.com/engine/reference/builder/#run) 명령
+- 좀 더 자세한 내용은 [pip and requirements files](https://pip.pypa.io/en/stable/user_guide/#requirements-files) 참고
+- 참고로, 팀이 최근에 python3로 업그레이드했으므로 'pip'가 아닌 'pip3'을 사용하는 것이 좋습니다.
 
-`#[TODO]: Specify a listening port for the container`
+`#[TODO]: 컨테이너의 listening 포트를 지정합니다.`
 
-- Consider the [EXPOSE](https://docs.docker.com/engine/reference/builder/#expose) command
-- App listening portNum can be found in the app source - mythicalMysfitsService.py
+- [EXPOSE](https://docs.docker.com/engine/reference/builder/#expose) 명령
+- 앱 리스닝 포트는 앱 소스(mythicalMysfitsService.py)에서 찾을 수 있습니다.
 
-`#[TODO]: Run "mythicalMysfitsService.py" as the final step. We want this container to run as an executable. Looking at ENTRYPOINT and CMD for this?`
+`#[TODO]: 마지막 단계로 "mythicalMysfitsService.py“를 실행합니다.이 컨테이너를 실행 파일로 실행하려고 합니다.이에 대해 ENTRYPOINT와 CMD를 찾고 계신가요?`
 
-- Consider the [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) and [CMD](https://docs.docker.com/engine/reference/builder/#cmd) - commands
-- [ENTRYPOINT and CMD](https://docs.docker.com/engine/reference/builder/#understand-how-cmd-and-entrypoint-interact) can be used together
-- Our ops team typically runs 'python3 mythicalMysfitsService.py' to launch the application on our servers.
+- [ENTRYPOINT](https://docs.docker.com/engine/reference/builder/#entrypoint) and [CMD](https://docs.docker.com/engine/reference/builder/#cmd) 명령
+- [ENTRYPOINT & CMD 함께 사용 가능](https://docs.docker.com/engine/reference/builder/#understand-how-cmd-and-entrypoint-interact)
+- 운영팀은 보통 'python3 MythicalMysfitsService.py'를 실행하여 서버에서 애플리케이션을 실행합니다.
 
 </details>
