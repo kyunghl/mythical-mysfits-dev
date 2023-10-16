@@ -28,3 +28,4 @@ REGION은 CloudFormation 스택을 배포한 지역의 코드여야 합니다. �
 - [Lab 1: Mythical Mysfits 모노리스를 컨테이너화하기](./01.Lab-1.md)
 - [Lab 2: AWS Fargate를 이용하여 컨테이너 배포하기](./02.Lab-2.md)
 - [Lab 3: ALB와 ECS 서비스를 이용하여 모노리스를 스케일링하기](./03.Lab-3.md)
+- [Lab 4: 더 많은 마이크로서비스를 점진적으로 빌드 및 배포](./04.Lab-4.md)
