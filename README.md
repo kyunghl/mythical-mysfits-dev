@@ -7,7 +7,7 @@ AWS 클라우드에서 컨테이너를 실행하면 강력하고 확장 가능�
 
 ## 준비
 
-- [Workshop Setup](02.Setup.md)
+- [Workshop Setup](./01.Setup.md)
 
 ## Mythical Mysfits
 
@@ -25,4 +25,5 @@ REGION은 CloudFormation 스택을 배포한 지역의 코드여야 합니다. �
 
 ## Labs
 
-- [Lab 1: Mythical Mysfits 모노리스를 컨테이너화하기](./03.Lab1.md)
+- [Lab 1: Mythical Mysfits 모노리스를 컨테이너화하기](./02.Lab1.md)
+- [Lab 2: AWS Fargate를 이용하여 컨테이너 배포하기](./03.Lab2.md)
