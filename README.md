@@ -38,4 +38,3 @@ REGION은 CloudFormation 스택을 배포한 지역의 코드여야 합니다. �
 - [Lab 6: Mysfits을 위한 EKS 준비](./06.Lab-6.md)
 - [Lab 7: 모노리스 배포](./07.Lab-7.md)
 - [Lab 8: EKS와 ALB를 사용하여 더 많은 마이크로서비스를 점진적으로 빌드 및 배포](./08.Lab-8.md)
-
